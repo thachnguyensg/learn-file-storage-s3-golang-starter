@@ -21,7 +21,7 @@ func (cfg apiConfig) assetDiskPath(assetPath string) string {
 }
 
 func (cfg apiConfig) assetURL(assetPath string) string {
-	return fmt.Sprintf("%s/%s", "/assets", assetPath)
+	return fmt.Sprintf("http://localhost:%s/assets/%s", cfg.port, assetPath)
 }
 
 func getAssetPath(videoId uuid.UUID, mediaType string) string {
