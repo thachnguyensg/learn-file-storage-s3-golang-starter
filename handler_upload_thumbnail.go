@@ -75,7 +75,12 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	fileName := getAssetPath(video.ID, mediaType)
+	fileName, err := getAssetPath(mediaType)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't generate asset path", err)
+		return
+	}
+
 	filePath := cfg.assetDiskPath(fileName)
 	tnFile, err := os.Create(filePath)
 	if err != nil {
