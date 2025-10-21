@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 
@@ -11,10 +12,9 @@ import (
 	"github.com/google/uuid"
 )
 
-var fileExt = map[string]string{
-	"image/jpeg": ".jpg",
-	"image/png":  ".png",
-	"image/gif":  ".gif",
+var allowMimeType = map[string]struct{}{
+	"image/jpeg": {},
+	"image/png":  {},
 }
 
 func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +54,15 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	defer file.Close()
 
 	mediaType := header.Header.Get("Content-Type")
+	mimeType, _, err := mime.ParseMediaType(mediaType)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Couldn't parse media type", err)
+		return
+	}
+	if _, ok := allowMimeType[mimeType]; !ok {
+		respondWithError(w, http.StatusBadRequest, "Unsupported media type", fmt.Errorf("media type %s is not allowed", mimeType))
+		return
+	}
 
 	video, err := cfg.db.GetVideo(videoID)
 	if err != nil {
