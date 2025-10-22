@@ -1,0 +1,32 @@
+meta {
+  name: Reset
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://{{host}}/admin/reset
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "email": "admin@tubely.com",
+    "password": "password"
+  }
+}
+
+vars:post-response {
+  token: res.body.token
+  refresh_token: res.body.refresh_token
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

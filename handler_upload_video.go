@@ -89,12 +89,34 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		respondWithError(w, http.StatusInternalServerError, "Couldn't save video to temp file", err)
 		return
 	}
+	fmt.Println("Saved video to temp file:", tmpFile.Name())
 
-	tmpFile.Seek(0, io.SeekStart)
+	aspectRatio, err := getVideoAspectRatio(tmpFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't get video aspect ratio", err)
+		return
+	}
+	prefix := getVideoPrefix(aspectRatio)
+	key := fmt.Sprintf("%s/%s", prefix, tmpFileName)
+
+	// _, err = tmpFile.Seek(0, io.SeekStart)
+	// if err != nil {
+	// 	respondWithError(w, http.StatusInternalServerError, "Couldn't seek to beginning of temp file", err)
+	// 	return
+	// }
+	processFilePath, err := processVideoForFastStart(tmpFile.Name())
+	processFile, err := os.Open(processFilePath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't open processed video file", err)
+		return
+	}
+	defer os.Remove(processFile.Name())
+	defer processFile.Close()
+
 	_, err = cfg.s3Client.PutObject(r.Context(), &s3.PutObjectInput{
 		Bucket:      &cfg.s3Bucket,
-		Key:         &tmpFileName,
-		Body:        tmpFile,
+		Key:         &key,
+		Body:        processFile,
 		ContentType: &mediaType,
 	})
 	if err != nil {
@@ -102,7 +124,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	videoUrl := cfg.assetObjectURL(tmpFileName)
+	videoUrl := cfg.assetObjectURL(key)
 	video.VideoURL = &videoUrl
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {

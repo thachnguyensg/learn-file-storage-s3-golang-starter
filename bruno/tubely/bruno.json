@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "tubely",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
