@@ -99,11 +99,6 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	prefix := getVideoPrefix(aspectRatio)
 	key := fmt.Sprintf("%s/%s", prefix, tmpFileName)
 
-	// _, err = tmpFile.Seek(0, io.SeekStart)
-	// if err != nil {
-	// 	respondWithError(w, http.StatusInternalServerError, "Couldn't seek to beginning of temp file", err)
-	// 	return
-	// }
 	processFilePath, err := processVideoForFastStart(tmpFile.Name())
 	processFile, err := os.Open(processFilePath)
 	if err != nil {
@@ -124,7 +119,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	videoUrl := cfg.assetObjectURL(key)
+	videoUrl := fmt.Sprintf("%s,%s", cfg.s3Bucket, key)
 	video.VideoURL = &videoUrl
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {
@@ -132,5 +127,11 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, video)
+	signedVideo, err := cfg.dbVideoToSigedVideo(video)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't generate signed video URL", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, signedVideo)
 }
