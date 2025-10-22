@@ -28,6 +28,10 @@ func (cfg apiConfig) assetObjectURL(assetPath string) string {
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, assetPath)
 }
 
+func (cfg apiConfig) assetObjectCDNURL(key string) string {
+	return fmt.Sprintf("https://%s/%s", cfg.s3CfDistribution, key)
+}
+
 func getAssetPath(mediaType string) (string, error) {
 	randBuf := make([]byte, 32)
 	_, err := rand.Read(randBuf)
